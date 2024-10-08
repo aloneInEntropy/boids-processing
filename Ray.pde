@@ -24,14 +24,6 @@ public class Ray {
     }
     
     public void lookAt(PVector d) {
-        // if (d.magSq() > 1) {
-        //     // normalise direction if unnormalised
-        //     dir = PVector.sub(d, pos);
-        //     dir.normalize();
-        // } else {
-        //     dir = d;
-        //     dir.normalize();
-        // }
         dir = d;
         dir.normalize();
     }

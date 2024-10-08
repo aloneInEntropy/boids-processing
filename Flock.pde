@@ -62,7 +62,5 @@ public class Flock {
         else if (chance < 29.5) return BoidType.FISH_3; // 20 - 29.499 (32%)
         else if (chance < 29.8) return BoidType.PRED_1; // 29.5 - 29.799 (1%)
         return BoidType.PRED_2; // 29.8 - 29.999 (< 1%)
-        
-        // also todo: https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github
     }
 }

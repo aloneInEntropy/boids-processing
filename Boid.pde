@@ -6,11 +6,11 @@ DONE: use normal of colliding wall to further determine angle sign
 *: Increasing the viewCone value causes an immediate snap away from the boid's direction, because if an earlier point in the clockwise list is found to be valid (e.g., (0, 1)), it will immediately take that point. Instead, the can must be traversed at increasing angles from the direction. In order for this to work, the list must be replaced with an immediate raycast from the position.
 *: It is possible to instead find the closest angle in the list of rays and expand from that eightfold, but that seems needlessly complex.
 DONE: replace Ray list with a single Ray that performs the list-like collision check upon collision detection.
-TODO: Fix boids moving towards origin
+DONE: Fix boids moving towards origin
+!: it's still possible for boids to escape the boundary, provided they're moved into it enough
 */
 
 import java.util.Set;
-import java.util.stream.*;
 import java.util.HashSet;
 
 public enum BoidType {
@@ -44,21 +44,9 @@ public class Boid {
   
     BoidInfo info;
 
-    // public Boid(float x, float y, float dx, float dy, boolean isPrey, color c, int id) {
-    //     pos = new PVector(x, y);
-    //     velocity = new PVector(dx, dy);
-    //     dir = velocity.copy().normalize();
-    //     lastVelocity = velocity;
-    //     velocity.normalize();
-    //     history = new ArrayList<>();
-    //     boidCol = c;
-    //     prey = isPrey;
-    //     ID = id;
-    // }
-    
-    public Boid(float x, float y, float dx, float dy, BoidType t, int id) {
+    public Boid(float x, float y, float velX, float velY, BoidType t, int id) {
         pos = new PVector(x, y);
-        velocity = new PVector(dx, dy);
+        velocity = new PVector(velX, velY);
         dir = velocity.copy().normalize();
         lastVelocity = velocity;
         velocity.normalize();
@@ -130,6 +118,7 @@ public class Boid {
     // Move the boid according to the rules of boids
     void move(ArrayDeque<Boid> boids) {
         int numNeighbors = boids.size() - 1;
+        int numFamily = 0; // only move by family rules if near family. otherwise, boid will move towards origin due to subtraction in alignment and cohesion checks
 
         // alignment variables
         float avgXVel = 0;
@@ -138,26 +127,35 @@ public class Boid {
         // separation variables
         float moveX = 0;
         float moveY = 0;
+        // if being chased, ignore all prey. define separate attacking and fleeing so that any behaviour defined before fully seen (i.e., deciding to chase before finding a predator in boid list can be undone)
+        float attackingMoveX = 0;
+        float attackingMoveY = 0;
+        float fleeingMoveX = 0;
+        float fleeingMoveY = 0;
+        info.isBeingChased = false;
         
         // cohesion variables
         int centerX = 0;
         int centerY = 0;
 
+
         for (Boid otherBoid : boids) {
             if (otherBoid.ID != this.ID) {
-                // alignment
-                avgXVel += otherBoid.velocity.x;
-                avgYVel += otherBoid.velocity.y;
-
-                // cohesion
-                centerX += otherBoid.pos.x;
-                centerY += otherBoid.pos.y;
-
-                // separation
                 float distFromBoid = bdist(otherBoid);
-                // if (prey == otherBoid.prey) {
+
+                // stay within group of same boid type
                 if (isFamily(otherBoid)) {
-                    // stay within group of same boid type
+                    numFamily += 1;
+
+                    // alignment
+                    avgXVel += otherBoid.velocity.x;
+                    avgYVel += otherBoid.velocity.y;
+
+                    // cohesion
+                    centerX += otherBoid.pos.x;
+                    centerY += otherBoid.pos.y;
+                    
+                    // separation
                     if (distFromBoid < info.minSepDistance) {
                         moveX += pos.x - otherBoid.pos.x;
                         moveY += pos.y - otherBoid.pos.y;
@@ -166,17 +164,18 @@ public class Boid {
                     // different boid types
                     inPursuit = distFromBoid <= info.minEnemyChaseDistance;
                     if (isPreyTo(otherBoid)) {
-                        if (distFromBoid <= info.eatDistance && frameCount > 100 /* grace period */) {
+                        info.isBeingChased = true;
+                        if (/* !info.isBeingChased &&  */distFromBoid <= info.eatDistance && frameCount > 200 /* grace period */) {
                             isCaught = true;
                             SM.boidTypeCounts.put(info.type, SM.boidTypeCounts.get(info.type) - 1);
-                            println(info.name + " CAUGHT BY " + otherBoid.info.name);
+                            // println(info.name + " CAUGHT BY " + otherBoid.info.name);
                             info.boidCol = color(0,0,0,0);
                         } else if (distFromBoid <= info.minEnemyInterceptDistance) {
                             // run away from predator
                             moveX += (pos.x - otherBoid.pos.x) * info.fearFactor;
                             moveY += (pos.y - otherBoid.pos.y) * info.fearFactor;
                         }
-                    } else if (isPredatorTo(otherBoid)) {
+                    } else if (isPredatorTo(otherBoid) /* && !info.isBeingChased */) {
                         if (inPursuit) {
                             // move towards goal
                             moveX -= (pos.x - otherBoid.pos.x) * info.goalWeight;
@@ -193,19 +192,21 @@ public class Boid {
         }
         
         if (numNeighbors != 0) {
-            // alignment
-            avgXVel = avgXVel / numNeighbors;
-            avgYVel = avgYVel / numNeighbors;
-            
-            velocity.x += (avgXVel - velocity.x) * info.matchingFactor;
-            velocity.y += (avgYVel - velocity.y) * info.matchingFactor;
-            
-            // cohesion
-            centerX = centerX / numNeighbors;
-            centerY = centerY / numNeighbors;
-            
-            velocity.x += (centerX - pos.x) * info.centeringFactor;
-            velocity.y += (centerY - pos.y) * info.centeringFactor;
+            if (numFamily != 0) {
+                // alignment
+                avgXVel = avgXVel / numFamily;
+                avgYVel = avgYVel / numFamily;
+                
+                velocity.x += (avgXVel - velocity.x) * info.matchingFactor;
+                velocity.y += (avgYVel - velocity.y) * info.matchingFactor;
+                
+                // cohesion
+                centerX = centerX / numFamily;
+                centerY = centerY / numFamily;
+                
+                velocity.x += (centerX - pos.x) * info.centeringFactor;
+                velocity.y += (centerY - pos.y) * info.centeringFactor;
+            }
             
             // separation
             velocity.x += moveX * info.avoidFactor;
@@ -226,9 +227,9 @@ public class Boid {
         float angle = atan2(velocity.y, velocity.x);
         pushMatrix();
         stroke(0);
-        translate(pos.x, pos.y);
-        rotate(angle);
-        translate(-pos.x, -pos.y);
+        translate(pos.x, pos.y); // translate world to boid's location so it's at the origin (using local space coordinates)
+        rotate(angle); // rotate it about "origin"
+        translate(-pos.x, -pos.y); // translate it back
         fill(info.boidCol);
         triangle(pos.x - 15, pos.y + 5, pos.x - 15, pos.y - 5, pos.x, pos.y);
         popMatrix();
@@ -287,7 +288,7 @@ public class Boid {
 
 class BoidInfo {
     // alignment variables
-    float matchingFactor = 0.01; // Adjust by this % of average velocity
+    float matchingFactor = 0.005; // How much to align velocity with family
 
     // separation variables
     float minSepDistance = 20; // The distance to stay away from other boids
@@ -300,13 +301,14 @@ class BoidInfo {
     HashMap<BoidType, Float> fearFactorMapping;
 
     // cohesion variables
-    float centeringFactor = 0.01; // adjust velocity by this %
+    float centeringFactor = 0.005; // How much to keep boid in family
 
     int familyRange = 100; /* the distance the boid will check for other boids */
     int MAX_SPEED = 200; /* the maximum speed of the boid */
     int MAX_CHASE_SPEED = 800; /* the maximum speed of the boid */
     float originalViewCone = 180; /* view angle */
     float originalRayExtent = 50; /* distance to check collisions */
+    boolean isBeingChased = false;
 
     color boidCol; /* colour of the boid */
     float viewCone = originalViewCone; /* view angle */
@@ -334,7 +336,8 @@ class BoidInfo {
                 name = "Shark 1";
                 minSepDistance = 20;
                 prey = initSet(
-                    BoidType.FISH_1, BoidType.FISH_2, BoidType.FISH_3, BoidType.PLANKTON);
+                    BoidType.FISH_1, BoidType.FISH_2, BoidType.FISH_3, BoidType.PLANKTON
+                );
                 predators = new HashSet<>();
                 boidCol = color(#f54c14);
             break;	
@@ -343,7 +346,8 @@ class BoidInfo {
                 minSepDistance = 30;
                 minEnemyChaseDistance = 150;
                 prey = initSet(
-                    BoidType.FISH_1, BoidType.FISH_2, BoidType.FISH_3, BoidType.PLANKTON);
+                    BoidType.FISH_1, BoidType.FISH_2, BoidType.FISH_3, BoidType.PLANKTON
+                );
                 predators = new HashSet<>();
                 boidCol = color(#f54cc4);
                 
@@ -356,7 +360,7 @@ class BoidInfo {
                 predators = initSet(
                     BoidType.PRED_1, BoidType.PRED_2
                 );
-                boidCol = color(#558cd4);
+                boidCol = color(#552cd4);
                 
             break;	
             case FISH_2 :
@@ -367,7 +371,7 @@ class BoidInfo {
                 predators = initSet(
                     BoidType.PRED_1, BoidType.PRED_2
                 );
-                boidCol = color(#558ce4);
+                boidCol = color(#55fcff);
                 
             break;	
             case FISH_3 :
@@ -376,9 +380,9 @@ class BoidInfo {
                     BoidType.PLANKTON
                 );
                 predators = initSet(
-                    BoidType.PRED_1, BoidType.PRED_2, BoidType.FISH_2 /* scared of fish 2 */
+                    BoidType.PRED_1, BoidType.PRED_2
                 );
-                boidCol = color(#558cf4);
+                boidCol = color(#558ff4);
                 
             break;	
             case PLANKTON :

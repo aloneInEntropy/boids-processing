@@ -11,7 +11,7 @@ TODO: 3. use single points for Wall vertices to half vertices stored and check c
 TODO: 4. use only wall vertices intersecting boid's surrounding cells to check collisions
 */
 
-int numBoids = 2000;
+int numBoids = 3000;
 
 Flock flock;
 ArrayList<Boid> boids = new ArrayList<Boid>();
@@ -23,7 +23,6 @@ void setup() {
     // size(2560, 1600);
     // size(1024, 512);
     // frameRate(60);
-    // grid = new Grid(width, 110)
 
     bwalls = new ArrayList<>();
     bwalls.add(new Wall(0, 0, width, height)); // border
@@ -41,18 +40,25 @@ void setup() {
 void draw() {
     SM.updateDelta();
     background(150);
-    for (int i = 1; i < bwalls.size(); i++) {
+    for (int i = 0; i < bwalls.size(); i++) {
         Wall w = bwalls.get(i);
-        w.drawShape(#ffffff);
+        w.drawShape(i == 0 ? color(255, 0) : #ffffff);
     }
-    bwalls.set(
-        bwalls.size() - 1, new Wall(mouseX, mouseY, (int)bwalls.get(bwalls.size() - 1).extents.x, (int)bwalls.get(bwalls.size() - 1).extents.y));
+    if (bwalls.size() > 1) {
+        bwalls.set(
+            bwalls.size() - 1, new Wall(mouseX, mouseY, (int)bwalls.get(bwalls.size() - 1).extents.x, 
+            (int)bwalls.get(bwalls.size() - 1).extents.y));
+    }
     flock.update(bwalls);
     
     fill(0);
     textSize(20);
     float textXPos = width - 200;
     text(frameRate, textXPos, 50);
+    // update text every short while
+    if (frameCount % 10 == 0) {
+        SM.countBoidTypes(flock);
+    }
     for (int i = 0; i < SM.boidTypeCounts.size(); i++) {
         BoidType bt = BoidType.values()[i];
         text(bt.name() + " Count: " + Integer.valueOf(SM.boidTypeCounts.getOrDefault(bt, 0)), textXPos, 100 + (i * 20));

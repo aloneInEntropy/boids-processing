@@ -18,6 +18,13 @@ public static class SM {
         boidTypeCounts = new HashMap<>();
     }
 
+    public static void countBoidTypes(Flock flock) {
+        reset();
+        for (Boid b : flock.swarm.boids) {
+            boidTypeCounts.put(b.info.type, boidTypeCounts.containsKey(b.info.type) ? boidTypeCounts.get(b.info.type) + 1 : 1);
+        }
+    }
+
     public static float wrap(float x, float lo, float hi) {
         if (x < lo) x = hi - abs(x);
         if (x > hi) x = hi - x;
