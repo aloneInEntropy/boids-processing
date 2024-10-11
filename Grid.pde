@@ -67,6 +67,14 @@ public class Grid {
         }
         return group;
     }
+
+    // public void process() {
+    //     for (ArrayDeque<Boid> boids : cells.values()) {
+    //         for (Boid b : boids) {
+                
+    //         }
+    //     }
+    // }
     
     public void refreshCells() {
         for (ArrayDeque<Boid> b : cells.values()) {

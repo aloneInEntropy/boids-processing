@@ -5,7 +5,7 @@ public class Flock {
     ArrayList<Wall> walls;
     public Flock (int numBoids, float fieldSize, ArrayList<Wall> walls) {
         float realFieldSize = fieldSize + 2*padding;
-        this.swarm = new Grid(realFieldSize, Boid.familyRange - 20);
+        this.swarm = new Grid(realFieldSize, Boid.familyRange - 70);
         this.walls = walls;
         this.nBoids = numBoids;
         this.fSize = realFieldSize;
@@ -24,9 +24,9 @@ public class Flock {
     }
 
     public void update() {
-        // swarm.drawGrid();
+        if (SM.showGrid) swarm.drawGrid();
         for (Boid b : swarm.boids) {
-            ArrayDeque<Boid> closeBoids = swarm.getNearCells((int)b.pos.x, (int)b.pos.y, (float)Boid.familyRange);
+            ArrayDeque<Boid> closeBoids = swarm.getNearCells((int)b.pos.x, (int)b.pos.y, (float)b.info.familyRange);
             b.process(closeBoids, walls);
         }
         swarm.refreshCells();
@@ -56,10 +56,10 @@ public class Flock {
 
     BoidType getRandomBoidType() {
         float chance = random(0, 30);
-        if (chance < 4) return BoidType.PLANKTON; // 0 - 3.999 (13%)
-        else if (chance < 13) return BoidType.FISH_1; // 4 - 12.999 (27%)
-        else if (chance < 20) return BoidType.FISH_2; // 13 - 19.999 (23%)
-        else if (chance < 29.5) return BoidType.FISH_3; // 20 - 29.499 (32%)
+        if (chance < 8) return BoidType.PLANKTON; // 0 - 7.999 (26%)
+        else if (chance < 16) return BoidType.FISH_1; // 8 - 15.999 (26%)
+        else if (chance < 23) return BoidType.FISH_2; // 16 - 22.999 (23%)
+        else if (chance < 29.5) return BoidType.FISH_3; // 23 - 29.499 (22%)
         else if (chance < 29.8) return BoidType.PRED_1; // 29.5 - 29.799 (1%)
         return BoidType.PRED_2; // 29.8 - 29.999 (< 1%)
     }

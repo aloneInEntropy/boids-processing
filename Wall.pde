@@ -6,10 +6,10 @@ public class Wall {
         pos = new PVector(x, y);
         extents = new PVector(xl, yl);
         shape = new ArrayList<>();
-        shape.add(new Boundary(new PVector(x, y), new PVector(x+xl, y)));
-        shape.add(new Boundary(new PVector(x, y), new PVector(x, y+yl)));
-        shape.add(new Boundary(new PVector(x+xl, y), new PVector(x+xl, y+yl)));
-        shape.add(new Boundary(new PVector(x, y+yl), new PVector(x+xl, y+yl)));
+        shape.add(new Boundary(new PVector(x, y), new PVector(x+xl, y))); // tl -> tr
+        shape.add(new Boundary(new PVector(x+xl, y), new PVector(x+xl, y+yl))); // tr -> br
+        shape.add(new Boundary(new PVector(x+xl, y+yl), new PVector(x, y+yl))); // br -> bl
+        shape.add(new Boundary(new PVector(x, y+yl), new PVector(x, y))); // bl -> tl
     }
     public Wall (PVector _position, PVector _size) {
         pos = _position;

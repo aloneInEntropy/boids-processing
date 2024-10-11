@@ -11,7 +11,7 @@ TODO: 3. use single points for Wall vertices to half vertices stored and check c
 TODO: 4. use only wall vertices intersecting boid's surrounding cells to check collisions
 */
 
-int numBoids = 3000;
+int numBoids = 1000;
 
 Flock flock;
 ArrayList<Boid> boids = new ArrayList<Boid>();
@@ -50,28 +50,56 @@ void draw() {
             (int)bwalls.get(bwalls.size() - 1).extents.y));
     }
     flock.update(bwalls);
-    
-    fill(0);
-    textSize(20);
-    float textXPos = width - 200;
-    text(frameRate, textXPos, 50);
     // update text every short while
     if (frameCount % 10 == 0) {
         SM.countBoidTypes(flock);
     }
-    for (int i = 0; i < SM.boidTypeCounts.size(); i++) {
-        BoidType bt = BoidType.values()[i];
-        text(bt.name() + " Count: " + Integer.valueOf(SM.boidTypeCounts.getOrDefault(bt, 0)), textXPos, 100 + (i * 20));
+    
+    float textXPos = width - 210;
+    strokeWeight(2);
+    stroke(0);
+    textSize(15);
+    fill(0);
+    text("Show Debug (TAB): " + (SM.showDebug ? "ON" : "OFF"), textXPos, 30);
+    if (SM.showDebug) {
+        fill(255, 50, 50, 50);
+        rect(textXPos - 20, 0, 300, 240);
+        fill(0);
+        text("FPS: " + Float.valueOf(frameRate), textXPos, 60);
+        text("Frame: " + Integer.valueOf(frameCount), textXPos, 75);
+        for (int i = 0; i < BoidType.values().length; i++) {
+            BoidType bt = BoidType.values()[i];
+            text(bt.name() + " Count: " + Integer.valueOf(SM.boidTypeCounts.getOrDefault(bt, 0)), textXPos, 90 + (i * 15));
+        }
+        fill(0);
+        text("Show Rays (A): " + (SM.showRays ? "ON" : "OFF"), textXPos, 180);
+        text("Attacking (Q): " + (SM.canAttack ? "ON" : "OFF"), textXPos, 195);
+        text("Show Boids (X): " + (SM.showBoids ? "ON" : "OFF"), textXPos, 210);
+        text("Show Grid (Z): " + (SM.showGrid ? "ON" : "OFF"), textXPos, 225);
+    } else {
+        fill(255, 50, 50, 50);
+        rect(textXPos - 20, 0, 300, 50);
     }
-    text("Show Rays: " + (SM.showRays ? "ON" : "OFF"), textXPos, 220);
-    text("Frame: " + Integer.valueOf(frameCount), textXPos, 240);
 }
 
 void keyPressed() {
     if (key == ' ') {
+        SM.canAttack = false;
         flock.reset();
     }
     if (keyCode == TAB) {
+        SM.showDebug = !SM.showDebug;
+    }
+    if (key == 'a' || key == 'A') {
         SM.showRays = !SM.showRays;
+    }
+    if (key == 'q' || key == 'Q') {
+        SM.canAttack = !SM.canAttack;
+    }
+    if (key == 'x' || key == 'X') {
+        SM.showBoids = !SM.showBoids;
+    }
+    if (key == 'z' || key == 'Z') {
+        SM.showGrid = !SM.showGrid;
     }
 }

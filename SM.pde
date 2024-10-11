@@ -3,7 +3,11 @@
 public static class SM {
     public static HashMap<BoidType, Integer> boidTypeCounts = new HashMap<>();
     public static float delta = 1/60;
-    public static boolean showRays = false;
+    public static boolean showRays = false; // show raycasts for each boid
+    public static boolean canAttack = false; // can boids attack prey (and prey run away)?
+    public static boolean showGrid = false; // show grid partition
+    public static boolean showDebug = true; // show debug menu
+    public static boolean showBoids = true; // show boids
 
     private static long lastTime = System.nanoTime();
     public SM () {boidTypeCounts = new HashMap<>(); }
